@@ -2,6 +2,8 @@ from typing import List, Optional, Dict
 from pydantic import BaseModel
 from langgraph.graph import StateGraph, START, END
 
+import argparse
+
 # Import BAML-generated client and types
 from baml_client.sync_client import b  # BAML synchronous client
 from baml_client.types import Clarification, Plan, Critique, ResultItem, RankedResultItem, Answer, ContextItem
@@ -271,9 +273,15 @@ def build_agent_graph():
     return agent_graph
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run the Crypto Deep Research Agent")
+    parser.add_argument("--question", type=str, help="The question to research")
+    args = parser.parse_args()
+
     agent_graph = build_agent_graph()
     agent = DeepResearchAgent(agent_graph)
-    user_question = "What are the primary uses of Ethereum?" # Changed question for variety
+    user_question = (
+        args.question or "What are the primary uses of Ethereum?"
+    )  # Changed question for variety
     print(f"User: {user_question}")
     # Run the agent (this will ask for clarification interactively if needed)
     final_output_string = agent.run(user_question) # Returns a string with answer + references
