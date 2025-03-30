@@ -28,14 +28,15 @@ function ClarifyQuestion(question: string) -> Clarification {
 
 test clarify_no_clarification_needed {
   functions [ClarifyQuestion]
-  args { question "What is Bitcoin?" }
+  args { question "What is the capital of France?" }
   @@assert({{ this.needed == false }})
   @@assert({{ this.question == "" }})
 }
 
 test clarify_needs_clarification {
   functions [ClarifyQuestion]
-  args { question "How do I recover my wallet?" }
+  args { question "Tell me about that recent discovery." }
   @@assert({{ this.needed == true }})
-  @@assert({{ this.question|regex_match("(?i)wallet") }})
+  @@assert({{ this.question|length > 5 }})
+  @@assert({{ this.question|regex_match("(?i)(discovery|which|what)") }})
 }

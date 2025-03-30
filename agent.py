@@ -273,15 +273,16 @@ def build_agent_graph():
     return agent_graph
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run the Crypto Deep Research Agent")
+    parser = argparse.ArgumentParser(description="Run the Deep Research Agent")
     parser.add_argument("--question", type=str, help="The question to research")
     args = parser.parse_args()
 
     agent_graph = build_agent_graph()
     agent = DeepResearchAgent(agent_graph)
     user_question = (
-        args.question or "What are the primary uses of Ethereum?"
-    )  # Changed question for variety
+        args.question
+        or "What were the key factors leading to the fall of the Roman Empire?"
+    )
     print(f"User: {user_question}")
     # Run the agent (this will ask for clarification interactively if needed)
     final_output_string = agent.run(user_question) # Returns a string with answer + references

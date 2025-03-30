@@ -44,26 +44,33 @@ function AnswerQuestion(question: string, context: ContextItem[]) -> Answer {
 }
 
 // Tests for AnswerQuestion
-test answer_with_context {
+test answer_with_general_context {
   functions [AnswerQuestion]
   args {
-    question "What are the benefits of blockchain in finance?"
+    question "How does photosynthesis work in plants?"
     context [
       { 
-        content "Blockchain allows decentralized transactions" 
-        source "http://example.com/decentralized" 
-      }
+        content "Photosynthesis uses sunlight, water, and carbon dioxide to create glucose (sugar) and oxygen.", 
+        source "http://example.com/photosynthesis-basics" 
+      },
       { 
-        content "It increases transparency and security" 
-        source "http://example.com/security" 
-      }
+        content "Chlorophyll, the green pigment in leaves, absorbs sunlight.", 
+        source "http://example.com/chlorophyll-role"
+      },
       { 
-        content "Current Bitcoin price: $60,000" 
-        source null 
-      } // Example with no source
+        content "The process primarily occurs in chloroplasts within plant cells.", 
+        source "http://example.com/chloroplasts" 
+      },
+      { 
+        content "Oxygen is released as a byproduct.", 
+        source null // Example with no source
+      }
     ]
   }
   @@assert({{ this.cited_answer != ""}})
-  @@assert({{ "transparency" in this.cited_answer or "security" in this.cited_answer }})
-  @@assert({{ "[0]" in this.cited_answer or "[1]" in this.cited_answer or "[2]" in this.cited_answer }})
+  @@assert({{ "glucose" in this.cited_answer or "oxygen" in this.cited_answer or "chlorophyll" in this.cited_answer }})
+  @@assert({{ "[0]" in this.cited_answer or "[1]" in this.cited_answer or "[2]" in this.cited_answer or "[3]" in this.cited_answer }})
+  // Check if references are generated correctly (at least the ones with sources)
+  @@assert({{ this.references | length >= 2 }})
+  @@assert({{ "http://example.com/photosynthesis-basics" in (this.references | map(attribute='source') | list) }})
 }

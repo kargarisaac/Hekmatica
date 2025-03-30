@@ -41,3 +41,14 @@ test critique_incomplete_answer {
   @@assert({{ this.is_good == false }})
   @@assert({{ "risk" in this.missing_info | lower() }})
 }
+
+test critique_incomplete_general_answer {
+  functions [CritiqueAnswer]
+  args { 
+    question "Describe the water cycle, including evaporation and precipitation.", 
+    answer "The water cycle involves water evaporating from the surface due to heat." 
+  }
+  // The answer only mentioned evaporation, not precipitation. Expect critique to flag missing info about precipitation.
+  @@assert({{ this.is_good == false }})
+  @@assert({{ "precipitation" in this.missing_info | lower() or "rainfall" in this.missing_info | lower() }})
+}

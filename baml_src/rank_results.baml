@@ -66,42 +66,43 @@ Example output format for top_k=2:
 }
 
 // Optional: Add a test case
-test TestRankResults {
+test TestRankResultsGeneral {
   functions [RankResults]
   args {
-    question "How to mine Bitcoin?"
-    top_k 5
-    subqueries ["Bitcoin mining process", "Bitcoin mining hardware", "Bitcoin mining software"]
+    question "What are the benefits of renewable energy sources?"
+    top_k 3
+    subqueries ["advantages of solar power", "benefits of wind energy", "renewable energy vs fossil fuels"]
     results [
       {
-        content "Bitcoin mining is the process of adding transaction records...",
-        link "http://example.com/bitcoin-mining-process"
+        content "Solar power significantly reduces electricity bills and carbon footprint.",
+        link "http://example.com/solar-benefits"
       },
       {
-        content "ASIC miners are specialized hardware for Bitcoin mining.",
-        link "http://example.com/bitcoin-mining-hardware"
+        content "Wind turbines can be noisy and impact bird populations.",
+        link "http://example.com/wind-drawbacks"
       },
       {
-        content "Ethereum uses a different consensus mechanism.",
-        link "http://example.com/ethereum-info"
+        content "Fossil fuels are a major contributor to climate change.",
+        link "http://example.com/fossil-fuel-impacts"
       },
       {
-        content "Popular Bitcoin mining software includes CGMiner and BFGMiner.",
-        link "http://example.com/bitcoin-mining-software"
+        content "Renewable energy sources like wind and solar offer long-term sustainability.",
+        link "http://example.com/renewable-sustainability"
       },
        {
-        content "Cloud mining allows you to rent hash power.",
-        link "http://example.com/cloud-mining"
+        content "Geothermal energy provides a constant power supply.",
+        link "http://example.com/geothermal-info"
       },
       {
-        content "Dogecoin price prediction for next year.",
-        link "http://example.com/doge-price"
-      },
-       {
-        content "Setting up a Bitcoin wallet is the first step.",
-        link: "http://example.com/bitcoin-wallet"
-       }
+        content "The process of installing solar panels on a home.",
+        link "http://example.com/solar-installation"
+      }
     ]
   }
-  @@assert({{ this|length == 5 }})
+  // Assert that we get the requested number of results (top_k)
+  @@assert({{ this|length == 3 }})
+  // Assert that the top result has a high score (e.g., >= 7)
+  @@assert({{ this[0].relevance_score >= 7 }})
+  // Assert that the last result returned still has a reasonable score (e.g., >= 3)
+  @@assert({{ this[-1].relevance_score >= 3 }})
 } 

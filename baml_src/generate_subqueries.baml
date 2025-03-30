@@ -27,7 +27,14 @@ test generate_subqueries_basic {
 
 test generate_subqueries_with_clarification {
   functions [GenerateSubqueries]
-  args { question "How to mine cryptocurrency?", clarification_details "Bitcoin" }
-  // Expect queries specifically about mining Bitcoin
-  @@assert({{ this[0]|regex_match(".*Bitcoin.*") or this[0]|regex_match(".*BTC.*") or this[1]|regex_match(".*Bitcoin.*") or this[1]|regex_match(".*BTC.*") }})
+  args { 
+    question "Tell me about the history of computers.", 
+    clarification_details "Focus on the development of personal computers in the 1980s." 
+  }
+  // Expect queries specifically about 1980s personal computers
+  @@assert({{ this|length >= 2 }})
+  @@assert({{ 
+      (this[0] + " " + this[1] + " " + (this[2] if this|length > 2 else ""))
+      |regex_match("(?i)(personal computer|1980s|home computer)") 
+  }})
 }
