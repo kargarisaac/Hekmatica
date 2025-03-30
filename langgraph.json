@@ -1,0 +1,8 @@
+{
+    "graphs": {
+        "default": "agent:agent_graph"
+    },
+    "dependencies": [
+        "pyproject.toml"
+    ]
+}
