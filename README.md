@@ -177,6 +177,7 @@ When asked about LangGraph, use the "langgraph-docs" MCP server:
 ## TODO
 
 - [ ] Add template for output and check in the critique
+- [ ] Explore [browser use](https://github.com/browser-use/browser-use). 
 - [ ] Expand Toolset: Integrate more tools (calculator, specific APIs like arXiv, etc.).
 - [ ] Generalize `PriceLookup`: Modify the tool/mapping to handle more item types (stocks, products) or create a system for adding new lookups.
 - [ ] Enhance Planning: Improve tool selection logic in `plan_steps.baml` for a larger toolset.
