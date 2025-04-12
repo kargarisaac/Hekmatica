@@ -2,7 +2,7 @@
 
 `Hekmat` means wisdom and philosophy in Persian.
 
-Hekmatica is adeep research and conversational agent designed to answer questions on various topics by leveraging web search, external tools (like price lookups), and large language models (LLMs).
+Hekmatica is a deep research and conversational agent designed to answer questions on various topics by leveraging web search, external tools (like price lookups), and large language models (LLMs).
 
 ## Overview
 
