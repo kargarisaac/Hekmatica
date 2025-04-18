@@ -43,6 +43,14 @@ client<llm> Gemini2FlashClient {
   }
 }
 
+client<llm> Gemini2_5FlashClient {
+  provider "google-ai"
+  options {
+    model "gemini-2.5-flash-preview-04-17"
+    api_key env.GEMINI_API_KEY
+  }
+}
+
 // https://docs.boundaryml.com/docs/snippets/clients/round-robin
 client<llm> CustomFast {
   provider round-robin
