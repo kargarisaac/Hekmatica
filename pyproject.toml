@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "crypto-react"
+name = "hekmatica"
 version = "0.1.0"
 description = ""
 authors = ["kargarisaac <kargarisaac@gmail.com>"]
@@ -7,13 +7,15 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-mcpdoc = "^0.0.7"
 baml-py = "^0.81.3"
 duckduckgo-search = "^7.5.5"
 requests = "^2.32.3"
 langgraph = "^0.3.21"
 langchain-community = "^0.3.20"
 langgraph-cli = {extras = ["inmem"], version = "^0.1.81"}
+browser-use = "^0.1.40"
+langchain-google-genai = "^2.1.2"
+gradio = "^5.25.2"
 
 
 [tool.poetry.group.dev.dependencies]
