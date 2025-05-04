@@ -69,6 +69,7 @@ class ContextItem(BaseModel):
 class Critique(BaseModel):
     is_good: bool
     missing_info: str
+    critique: str
 
 class FilteredItem(BaseModel):
     content: str

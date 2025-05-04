@@ -80,5 +80,7 @@ Set 'finish' to true ONLY if you are ready to generate the final answer. Otherwi
 
 Thought: (Your reasoning here...)
 Action: (Set tool_name/query OR set finish=true)
+----
+{{ ctx.output_format }}
 """#
 }

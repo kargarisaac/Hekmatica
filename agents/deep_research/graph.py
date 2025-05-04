@@ -25,8 +25,31 @@ from agents.deep_research.state import AgentState, AgentAction
 
 # Define node functions for each step in the workflow:
 def clarify_node(state: AgentState):
-    """Use LLM to determine if clarification is needed."""
-    # Reset state for a new run
+    """Use LLM to determine if clarification is needed, UNLESS an answer was already provided."""
+
+    # Check if clarification was already provided/skipped via input state
+    if state.clarification_answer is not None:
+        print(
+            "Clarification answer provided in initial state. Skipping clarification check."
+        )
+        # Reset loop state but preserve the provided clarification details
+        return {
+            "clarification": state.clarification,  # Keep the potentially dummy clarification object
+            "clarification_answer": state.clarification_answer,  # Keep the provided answer
+            "current_react_loop": 0,
+            "agent_history": [],
+            "accumulated_results": [],
+            "final_relevant_results": [],
+            "current_observation": None,
+            "action": None,
+            "answer": None,
+            "critique": None,
+            "critique_feedback": None,
+            "attempt_count": 1,
+        }
+
+    print("No clarification answer provided. Checking if clarification is needed.")
+    # Reset state for a new run (including clearing any potential stale clarification)
     state.current_react_loop = 0
     state.agent_history = []
     state.accumulated_results = []
@@ -304,60 +327,69 @@ def execute_tool_node(state: AgentState):
 
 
 def filter_and_accumulate_node(state: AgentState):
-    """Filters the current_observation, updates history, and accumulates results."""
+    """Filters the current_observation using b.FilterResults, updates history, and accumulates results."""
     print("\n--- Filtering and Accumulating Result ---")
     current_obs = state.current_observation
-    filtered_summary = "No observation to filter."
     filtered_results_for_accumulation = []
+    observation_summary = "No observation processed."  # Default summary
 
-    if current_obs and current_obs.get("content"):
-        # Prepare input for RankResults - needs a list
-        obs_item = ResultItem(
-            content=current_obs.get("content"), link=current_obs.get("link")
-        )
-        top_k_to_request = 1  # We only want to know if this *one* result is relevant
+    # Prepare the observation list for BAML FilterResults
+    observation_list = []
+    if current_obs:
+        # Wrap the single observation dict in a list for the BAML function
+        # BAML function expects ObservationItem[], but the client often handles dicts.
+        # Ensure keys match ObservationItem definition in filter_results.baml (content, link, error)
+        observation_list.append(current_obs)
+        print(f"  Filtering observation: {current_obs}")
+    else:
+        print("  No observation content found to filter.")
+        observation_summary = "No observation content received."
 
+    if observation_list:
         try:
-            # Use RankResults to assess relevance of the single observation
-            ranked_results: List[RankedResultItem] = b.RankResults(
+            # Call BAML to filter the observation based on the question
+            filtered_items: List[FilteredItem] = b.FilterResults(
                 question=state.question,
-                results=[obs_item],  # Filter the single current observation
-                top_k=top_k_to_request,
+                results=observation_list,  # Pass the list containing the single observation dict
+            )
+            print(
+                f"  BAML FilterResults returned {len(filtered_items)} relevant item(s)."
             )
 
-            # Check if the observation was ranked (i.e., deemed relevant)
-            if ranked_results:
-                ranked_item = ranked_results[0]
-                # You might add a score threshold check here if needed: ranked_item.relevance_score >= 3
-                filtered_results_for_accumulation.append(
-                    {"content": ranked_item.content, "link": ranked_item.link}
-                )
-                filtered_summary = f"Relevant: {ranked_item.content[:150]}..."
-                print(f"  Observation deemed relevant.")
+            if filtered_items:
+                summaries = []
+                for item in filtered_items:
+                    # Add relevant info as dict to accumulated_results list
+                    filtered_results_for_accumulation.append(
+                        {"content": item.content, "link": item.source}
+                    )
+                    # Create summary for history
+                    summary = f"Relevant: {item.content[:150]}..."
+                    if item.source:
+                        summary += f" (Source: {item.source})"
+                    summaries.append(summary)
+                    print(f"    - {summary}")
+
+                observation_summary = "; ".join(summaries)
             else:
-                # If RankResults returns empty, it means the item wasn't relevant enough
-                filtered_summary = f"Filtered out: {obs_item.content[:150]}..."
+                # If FilterResults returns empty, it means the item wasn't relevant
+                obs_content = current_obs.get(
+                    "content", current_obs.get("error", "[No Content/Error]")
+                )
+                observation_summary = (
+                    f"Filtered out as irrelevant: {str(obs_content)[:150]}..."
+                )
                 print(f"  Observation filtered out as irrelevant.")
 
         except Exception as e:
-            print(
-                f"Error during BAML RankResults call: {e}. Assuming observation is relevant."
-            )
-            # Fallback: Assume relevant on error? Or filter out? Let's assume relevant for now.
-            filtered_results_for_accumulation.append(
-                {"content": obs_item.content, "link": obs_item.link}
-            )
-            filtered_summary = f"Relevant (fallback): {obs_item.content[:150]}..."
+            print(f"Error during BAML FilterResults call: {e}. Observation not added.")
+            observation_summary = f"Error during filtering: {e}"
+            # Decide if you want to add raw observation on error, currently it's skipped.
 
-    elif current_obs and current_obs.get("error"):
-        filtered_summary = f"Error from tool: {current_obs.get('error')}"
-        # Optionally add errors to accumulated results or history if needed
-        # filtered_results_for_accumulation.append({"error": current_obs.get('error')})
-        print(f"  Tool execution resulted in error: {current_obs.get('error')}")
-    else:
-        print("  No valid observation content found to filter.")
+    # --- Update History and Accumulated Results ---
 
-    # Update history with the *filtered* observation summary
+    # Update history using the action from the *previous* step (reason_node)
+    # and the observation_summary generated above
     thought = state.action.thought if state.action else "N/A"
     action_summary = "Finish"  # Default if action is None or finish=True
     if state.action and not state.action.finish and state.action.tool_name:
@@ -366,28 +398,33 @@ def filter_and_accumulate_node(state: AgentState):
             if hasattr(state.action.tool_name, "value")
             else str(state.action.tool_name)
         )
-        action_summary = f"{tool_name_str}('{state.action.query}')"
+        query_str = f"('{state.action.query}')" if state.action.query else ""
+        action_summary = f"{tool_name_str}{query_str}"
 
-    state.agent_history.append((thought, action_summary, filtered_summary))
+    new_history = list(state.agent_history)
+    new_history.append((thought, action_summary, observation_summary))
 
     # Append the *filtered* results to the accumulated list
+    new_accumulated = list(state.accumulated_results)
     if filtered_results_for_accumulation:
-        state.accumulated_results.extend(filtered_results_for_accumulation)
+        new_accumulated.extend(filtered_results_for_accumulation)
         print(
             f"  Added {len(filtered_results_for_accumulation)} item(s) to accumulated results."
         )
 
-    # Increment loop counter *after* filtering and history update
-    state.current_react_loop += 1
+    print(
+        f"History Updated: Thought='{thought}', Action='{action_summary}', Observation='{observation_summary}'"
+    )
+    print(f"Total Accumulated Results: {len(new_accumulated)}")
 
-    print(f"Filtered Observation Summary: {filtered_summary}")
-    print(f"Total Accumulated Results: {len(state.accumulated_results)}")
+    # Increment loop counter *after* filtering and history update
+    current_loop = state.current_react_loop + 1
 
     # Return updates needed for the next reasoning step
     return {
-        "agent_history": state.agent_history,
-        "accumulated_results": state.accumulated_results,
-        "current_react_loop": state.current_react_loop,
+        "agent_history": new_history,
+        "accumulated_results": new_accumulated,
+        "current_react_loop": current_loop,
         "current_observation": None,  # Clear current observation after processing
     }
 
@@ -439,28 +476,30 @@ def final_filter_node(state: AgentState):
     return {"final_relevant_results": state.final_relevant_results}
 
 
-def answer_node(state: AgentState):
-    """Generate final answer from the final set of relevant results."""
+def generate_answer_node(state: AgentState):
+    """Generate the final answer using accumulated relevant results."""
     print("\n--- Generating Final Answer ---")
-    # Use final_relevant_results if final_filter_node is used,
-    # otherwise use accumulated_results directly.
-    # context_dicts = state.final_relevant_results or [] # If using final_filter_node
-    context_dicts = state.accumulated_results or []  # If NOT using final_filter_node
+    context_dicts = state.accumulated_results  # Use accumulated results directly
 
     if not context_dicts:
-        print("No relevant context found to generate answer.")
-        # Set a default answer or let BAML handle empty context
+        print("Warning: No accumulated results to generate answer from.")
         state.answer = Answer(
-            cited_answer="I could not find sufficient information to answer the question.",
+            cited_answer="I could not find enough information to answer the question.",
             references=[],
         )
-        return {"answer": state.answer}
+        # Store empty list in final_relevant_results as well
+        return {"answer": state.answer, "final_relevant_results": []}
 
+    # Convert accumulated results (List[Dict]) to ContextItem list for BAML
     context_items: List[ContextItem] = [
+        # Ensure content is always a string, handle potential None from dict.get
         ContextItem(content=d.get("content", ""), source=d.get("link"))
         for d in context_dicts
-        if d.get("content")
+        if d.get("content")  # Only include items with actual content
     ]
+
+    # Store the final relevant results used for the answer
+    final_results_for_state = context_dicts  # Store the list of dicts
 
     try:
         state.answer = b.AnswerQuestion(question=state.question, context=context_items)
@@ -471,7 +510,8 @@ def answer_node(state: AgentState):
             cited_answer=f"Error generating answer: {e}", references=[]
         )  # Provide error in answer
 
-    return {"answer": state.answer}
+    # Return the answer and the list of dicts used to generate it
+    return {"answer": state.answer, "final_relevant_results": final_results_for_state}
 
 
 def critique_node(state: AgentState):
@@ -523,11 +563,11 @@ def build_agent_graph():
     graph_builder.add_node("ask_user", ask_user_node)
     graph_builder.add_node("reason", reason_node)
     graph_builder.add_node("execute_tool", execute_tool_node)
+    graph_builder.add_node("filter_and_accumulate", filter_and_accumulate_node)
+    # Ensure the answer node name matches the function name used
     graph_builder.add_node(
-        "filter_and_accumulate", filter_and_accumulate_node
-    )  # Renamed
-    # graph_builder.add_node("final_filter", final_filter_node) # Optional final filter
-    graph_builder.add_node("generate_answer", answer_node)
+        "generate_answer", generate_answer_node
+    )  # Use generate_answer_node here
     graph_builder.add_node("generate_critique", critique_node)
 
     # --- Define Edges ---
@@ -542,62 +582,61 @@ def build_agent_graph():
         ):
             return "ask_user"
         else:
-            return "reason"  # Go directly to reason after clarification
+            return "reason"
 
     graph_builder.add_conditional_edges(
         "clarify",
         decide_clarification_path,
         {"ask_user": "ask_user", "reason": "reason"},
     )
-    graph_builder.add_edge("ask_user", "reason")  # Ask user also goes to reason
+    graph_builder.add_edge("ask_user", "reason")
 
     # ReAct Loop Logic
     def decide_react_action(state: AgentState):
         if state.action and state.action.finish:
-            # If ReasonAct decided to finish, exit loop to generate answer
-            # return "final_filter" # Go to final filter if using it
-            return "generate_answer"  # Go directly to answer if not using final filter
+            return "generate_answer"  # Point to the correct answer node name
         elif state.action and state.action.tool_name:
-            # If ReasonAct chose a tool, execute it
             return "execute_tool"
         else:
-            # Should not happen if reason_node forces finish on invalid action
             print("Warning: Invalid action state in decide_react_action. Finishing.")
-            # return "final_filter"
-            return "generate_answer"
+            return "generate_answer"  # Point to the correct answer node name
 
     graph_builder.add_conditional_edges(
         "reason",
         decide_react_action,
-        # {"execute_tool": "execute_tool", "final_filter": "final_filter"}, # If using final filter
         {
             "execute_tool": "execute_tool",
-            "generate_answer": "generate_answer",
-        },  # If not using final filter
+            "generate_answer": "generate_answer",  # Point to the correct answer node name
+        },
     )
 
     # Tool -> Filter -> Reason
     graph_builder.add_edge("execute_tool", "filter_and_accumulate")
-    graph_builder.add_edge("filter_and_accumulate", "reason")  # Loop back to reason
-
-    # Optional Final Filter -> Answer
-    # graph_builder.add_edge("final_filter", "generate_answer")
+    graph_builder.add_edge("filter_and_accumulate", "reason")
 
     # Answer -> Critique
-    graph_builder.add_edge("generate_answer", "generate_critique")
+    graph_builder.add_edge(
+        "generate_answer", "generate_critique"
+    )  # Point from the correct answer node name
 
     # Critique Loop Logic
     def decide_critique_path(state: AgentState):
-        if state.attempt_count >= 2:  # Check attempt count FIRST
+        # Check attempt count FIRST (using >= max_attempts, e.g., >= 2 for 1 retry)
+        # Ensure max_answer_attempts is accessible or defined (e.g., 2 for one retry)
+        max_answer_attempts = 2
+        if state.attempt_count >= max_answer_attempts:
             print(f"Max answer attempts ({state.attempt_count}) reached. Ending.")
             return END
+        # Then check critique status
         if state.critique and state.critique.is_good:
             print("Critique passed. Ending.")
             return END
         elif state.critique and not state.critique.is_good:
             print("Critique failed. Looping back to reason with feedback.")
+            # Pass critique feedback back to reason node
             return "reason"
         else:
+            # Fallback if critique is missing or invalid
             print("Warning: Critique missing or invalid state. Ending.")
             return END
 
@@ -606,7 +645,7 @@ def build_agent_graph():
         decide_critique_path,
         {
             END: END,
-            "reason": "reason",
+            "reason": "reason",  # Route back to reason on failure
         },
     )
 

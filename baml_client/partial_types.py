@@ -56,6 +56,7 @@ class ContextItem(BaseModel):
 class Critique(BaseModel):
     is_good: Optional[bool] = None
     missing_info: Optional[str] = None
+    critique: Optional[str] = None
 
 class FilteredItem(BaseModel):
     content: Optional[str] = None
