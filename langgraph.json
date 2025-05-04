@@ -1,8 +1,9 @@
 {
     "graphs": {
-        "default": "agent:agent_graph"
+        "deep_research_agent": "agents.agent_studio:agent_graph"
     },
     "dependencies": [
-        "pyproject.toml"
-    ]
+        "."
+    ],
+    "env": ".env"
 }
