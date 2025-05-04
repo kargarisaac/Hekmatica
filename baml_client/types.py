@@ -40,10 +40,19 @@ def all_succeeded(checks: Dict[CheckName, Check]) -> bool:
 
 
 
-class Tool(str, Enum):
+class ToolName(str, Enum):
     
     WebSearch = "WebSearch"
     PriceLookup = "PriceLookup"
+    AddressTracker = "AddressTracker"
+    OnChainMetrics = "OnChainMetrics"
+    UrlExtractor = "UrlExtractor"
+
+class AgentAction(BaseModel):
+    tool_name: Optional["ToolName"] = None
+    query: Optional[str] = None
+    finish: bool
+    thought: str
 
 class Answer(BaseModel):
     cited_answer: str
@@ -61,26 +70,21 @@ class Critique(BaseModel):
     is_good: bool
     missing_info: str
 
-class Plan(BaseModel):
-    steps: List["Step"]
+class FilteredItem(BaseModel):
+    content: str
+    source: Optional[str] = None
 
-class RankedResultItem(BaseModel):
+class HistoryItem(BaseModel):
+    thought: str
+    action: str
+    observation: str
+
+class ObservationItem(BaseModel):
     content: Optional[str] = None
     link: Optional[str] = None
-    relevance_score: int
-
-class ResultItem(BaseModel):
-    content: Optional[str] = None
-    link: Optional[str] = None
+    error: Optional[str] = None
 
 class Source(BaseModel):
     index: int
     source: str
     source_type: str
-
-class Step(BaseModel):
-    tool: "Tool"
-    query: str
-
-class SubQuestions(BaseModel):
-    questions: List[str]

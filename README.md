@@ -19,22 +19,22 @@ The agent leverages BAML (Boundary Markup Language) to define and manage interac
 
 ## Architecture
 
-*   **Orchestration:** LangGraph (`agent.py`) manages the flow of execution through different states and nodes.
+*   **Orchestration:** LangGraph (`agent.py`, `graph.py`) manages the flow of execution through different states and nodes.
 *   **LLM Interaction:** BAML (`baml_src/`) defines the prompts, functions, and data structures for interacting with LLMs reliably.
-*   **Tools:** Custom Python functions (`tools.py`) provide capabilities like web search and cryptocurrency price lookups.
-*   **State Management:** A Pydantic model (`AgentState` in `agent.py`) holds the data passed between steps in the LangGraph workflow.
+*   **Tools:** Custom Python functions (`tools/`) provide capabilities like web search, cryptocurrency price lookups, on-chain data fetching, address transaction tracking, and URL content extraction.
+*   **State Management:** A Pydantic model (`AgentState` in `state.py`) holds the data passed between steps in the LangGraph workflow.
 
 ## Components
 
 ### `agent.py`
 *   Defines the `AgentState` class to track the agent's progress.
-*   Implements the core agent logic using a `langgraph.StateGraph`.
-*   Contains node functions for each step of the workflow:
+*   Implements the core agent logic using a `langgraph.StateGraph` built in `graph.py`.
+*   Contains node functions for each step of the workflow (defined in `graph.py`):
     *   `clarify_node`: Checks if the question needs clarification.
     *   `ask_user_node`: Prompts the user for clarification (interactive).
     *   `generate_subqueries_node`: Breaks the question into subqueries (using BAML).
     *   `plan_node`: Plans tool usage for subqueries (using BAML).
-    *   `gather_info_node`: Executes the plan using tools from `tools.py`.
+    *   `gather_info_node`: Executes the plan using tools from the `tools/` directory.
     *   `filter_results_node`: Ranks and filters search results (using BAML).
     *   `answer_node`: Generates the final answer (using BAML).
     *   `critique_node`: Critiques the generated answer (using BAML).
@@ -42,9 +42,16 @@ The agent leverages BAML (Boundary Markup Language) to define and manage interac
 *   Includes the `DeepResearchAgent` class to encapsulate the graph and execution logic.
 *   Provides a `main` block to run the agent from the command line.
 
-### `tools.py`
-*   `web_search(query, max_results)`: Performs a general web search using DuckDuckGo and returns a list of results (content and link).
-*   `get_current_price(coin_name)`: Fetches the current price of a specific item (initially implemented for cryptocurrencies using CoinGecko API) in USD. This demonstrates how specialized lookup tools can be added. Supports common crypto names and symbols (e.g., "bitcoin", "BTC", "ethereum", "ETH").
+### `tools/` Directory
+*   `web_search.py`:
+    *   `web_search(query, max_results)`: Performs a general web search using Tavily and returns a list of results (content and link).
+    *   `extract_content_from_url(url)`: Extracts the main textual content from a given URL using Tavily's extraction API. Requires `TAVILY_API_KEY`.
+*   `get_price.py`:
+    *   `get_current_price(coin_name)`: Fetches the current price of a specific cryptocurrency (using CoinGecko API) in USD. Supports common crypto names and symbols.
+*   `address_transaction_tracker.py`:
+    *   `get_large_transfers_for_chain(chain, addresses, threshold, **kwargs)`: Monitors specified addresses on supported blockchains (ETH, BTC, SOL, ADA, XRP, DOGE, DOT) for recent large transactions exceeding a threshold. Requires API keys for certain chains (see Setup).
+*   `get_on_chain_data.py`:
+    *   `get_comprehensive_on_chain_data(asset_name, **kwargs)`: Fetches timeseries metrics (e.g., active addresses, transaction counts, fees) and recent transaction status updates for a given crypto asset using the Coin Metrics Community API.
 
 ### `baml_src/` (BAML Definitions)
 This directory contains the BAML files that define the structure and logic for interacting with LLMs:
@@ -52,7 +59,7 @@ This directory contains the BAML files that define the structure and logic for i
 *   `generators.baml`: May contain reusable BAML code snippets or configurations.
 *   `clarify_question.baml`: Defines the LLM function to analyze the user's question and ask for clarification if needed.
 *   `generate_subqueries.baml`: Defines the LLM function to generate relevant search subqueries.
-*   `plan_steps.baml`: Defines the LLM function to create a step-by-step plan involving tool usage.
+*   `plan_steps.baml`: Defines the LLM function to create a step-by-step plan involving tool usage (including WebSearch, PriceLookup, AddressTracker, OnChainMetrics, UrlExtractor).
 *   `rank_results.baml`: Defines the LLM function to rank search results based on relevance to the query.
 *   `answer_question.baml`: Defines the LLM function to synthesize a final, cited answer from the gathered context.
 *   `critique_answer.baml`: Defines the LLM function to evaluate the generated answer for quality and completeness.
@@ -66,12 +73,12 @@ The agent follows these steps, managed by LangGraph:
 1.  **Clarify:** Analyze the input question. If ambiguous, generate a clarifying question.
 2.  **Ask User (Conditional):** If clarification is needed, prompt the user and wait for input.
 3.  **Generate Subqueries:** Break down the (potentially clarified) question into smaller, searchable queries.
-4.  **Plan:** Determine which tool (`WebSearch` or `PriceLookup`) to use for each subquery.
-5.  **Gather Info:** Execute the plan, calling the appropriate tools (`web_search`, `get_current_price`).
-6.  **Filter Results:** Use an LLM to rank the gathered information (search results, prices) and select the most relevant items.
+4.  **Plan:** Determine which tool (`WebSearch`, `PriceLookup`, `AddressTracker`, `OnChainMetrics`, `UrlExtractor`) to use for each subquery or information need.
+5.  **Gather Info:** Execute the plan, calling the appropriate tools.
+6.  **Filter Results:** Use an LLM to rank the gathered information (search results, prices, transaction data, metrics summaries, extracted text) and select the most relevant items.
 7.  **Generate Answer:** Synthesize a comprehensive answer based on the filtered, relevant information, including citations/sources where available.
 8.  **Critique:** Evaluate the generated answer.
-9.  **Refine (Conditional):** If the critique identifies missing information and the attempt limit hasn't been reached, perform an additional web search for the missing details and loop back to generate an improved answer.
+9.  **Refine (Conditional):** If the critique identifies missing information and the attempt limit hasn't been reached, perform an additional web search (or potentially other tool calls based on critique - *current implementation primarily uses web search*) for the missing details and loop back to generate an improved answer.
 10. **End:** Return the final answer.
 
 ## Setup
@@ -81,18 +88,40 @@ The agent follows these steps, managed by LangGraph:
     git clone git@github.com:kargarisaac/crypto_deep_research_agent.git
     cd crypto_deep_research_agent
     ```
-2.  **Install dependencies:** This project uses Poetry for dependency management.
-    ```bash
-    poetry install
-    ```
-    *(If you don't have Poetry, install it first: [https://python-poetry.org/docs/#installation](https://python-poetry.org/docs/#installation))*
+2.  **Install dependencies:** This project uses `uv` for dependency management and virtual environments.
+    *   First, ensure you have `uv` installed. If not, follow the instructions at [https://github.com/astral-sh/uv#installation](https://github.com/astral-sh/uv#installation).
+    *   Create a virtual environment and install dependencies:
+        ```bash
+        # Create a virtual environment (e.g., named .venv)
+        uv venv
+        # Activate the virtual environment (syntax depends on your shell)
+        # Linux/macOS bash/zsh:
+        source .venv/bin/activate
+        # Windows cmd:
+        # .venv\Scripts\activate.bat
+        # Windows PowerShell:
+        # .venv\Scripts\Activate.ps1
+
+        # Install dependencies from pyproject.toml
+        uv pip install -r requirements.txt
+        # Or if you have dev dependencies defined:
+        # uv pip install -r requirements.txt -r requirements-dev.txt
+        ```
+        *(Ensure your `pyproject.toml` is configured correctly for `uv` or you have `requirements.txt` files generated)*
 3.  **Configure BAML:**
     *   Ensure your BAML `clients.baml` (or equivalent configuration in `baml_src/`) is set up with the necessary LLM API keys (e.g., Gemini, OpenAI, Anthropic). Refer to BAML documentation for configuration details.
-    *   Generate the BAML client code if you haven't already or if you modify BAML files:
+    *   Generate/update the BAML client code if you haven't already or if you modify BAML files:
         ```bash
-        baml-cli init
+        # Make sure your virtual environment is active
+        baml-cli generate
         ```
-4.  **Environment Variables:** Ensure any required API keys (e.g., for LLMs via BAML) are available as environment variables in your shell session or a `.env` file.
+        *(You may need `baml-cli init` first if it's a fresh setup)*
+4.  **Environment Variables:** Create a `.env` file in the project root or ensure the following environment variables are available in your shell session:
+    *   `TAVILY_API_KEY`: Required for `web_search` and `extract_content_from_url`. Get one from [Tavily AI](https://tavily.com/).
+    *   `ETHERSCAN_API_KEY`: Required by `address_transaction_tracker` for ETH. Get one from [Etherscan](https://etherscan.io/apis).
+    *   `BLOCKFROST_API_KEY`: Required by `address_transaction_tracker` for ADA. Get one from [Blockfrost](https://blockfrost.io/).
+    *   `SUBSCAN_API_KEY`: Required by `address_transaction_tracker` for DOT. Get one from [Subscan](https://docs.subscan.io/api-key-creation-retrieval).
+    *   *(Optional)* Keys for your chosen LLM provider if configured via environment variables in `clients.baml`.
 
 ## Usage
 
@@ -177,7 +206,7 @@ When asked about LangGraph, use the "langgraph-docs" MCP server:
 ## TODO
 
 - [ ] Add template for output and check in the critique
-- [ ] Explore [browser use](https://github.com/browser-use/browser-use). 
+- [ ] Explore [browser use](https://github.com/browser-use/browser-use).
 - [ ] Expand Toolset: Integrate more tools (calculator, specific APIs like arXiv, etc.).
 - [ ] Generalize `PriceLookup`: Modify the tool/mapping to handle more item types (stocks, products) or create a system for adding new lookups.
 - [ ] Enhance Planning: Improve tool selection logic in `plan_steps.baml` for a larger toolset.
@@ -192,4 +221,7 @@ When asked about LangGraph, use the "langgraph-docs" MCP server:
 - [ ] Streaming Output: Implement streaming for the final answer generation.
 - [ ] Enhanced Evaluation Suite: Develop a comprehensive test suite for diverse questions.
 - [ ] Integrate Robust Scraping Service (e.g., Firecrawl): For reliable extraction from complex/dynamic pages identified by search.
-- [ ] Explore Vision-Based Scraping: Leverage multimodal models to extract data from visual page layouts, bypassing traditional scraping blocks.
+- [ ] Add Crawl4AI tool for scraping
+- [ ] Add Twitter Tool: Integrate a tool to search recent tweets or user timelines.
+- [ ] Add Reddit Tool: Integrate a tool to search Reddit posts/comments.
+- [ ] Expand On-Chain Data Tools: Add more sources or specific metrics (e.g., DeFi protocol data, NFT activity).

@@ -61,30 +61,6 @@ class AsyncHttpRequest:
         False,
       )
     
-    async def AnswerQuestionWithContext(
-        self,
-        question: str,context: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "AnswerQuestionWithContext",
-        {
-          "question": question,
-          "context": context,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        False,
-      )
-    
     async def ClarifyQuestion(
         self,
         question: str,
@@ -132,9 +108,9 @@ class AsyncHttpRequest:
         False,
       )
     
-    async def DecomposeQuestion(
+    async def FilterResults(
         self,
-        question: str,
+        question: str,results: List[types.ObservationItem],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.HTTPRequest:
       __tb__ = baml_options.get("tb", None)
@@ -145,9 +121,10 @@ class AsyncHttpRequest:
       __cr__ = baml_options.get("client_registry", None)
 
       return await self.__runtime.build_request(
-        "DecomposeQuestion",
+        "FilterResults",
         {
           "question": question,
+          "results": results,
         },
         self.__ctx_manager.get(),
         tb,
@@ -155,9 +132,9 @@ class AsyncHttpRequest:
         False,
       )
     
-    async def GenerateSubqueries(
+    async def ReasonAct(
         self,
-        question: str,clarification_details: str,
+        question: str,clarification_details: Optional[str],history: List[types.HistoryItem],critique_feedback: Optional[str],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.HTTPRequest:
       __tb__ = baml_options.get("tb", None)
@@ -168,107 +145,12 @@ class AsyncHttpRequest:
       __cr__ = baml_options.get("client_registry", None)
 
       return await self.__runtime.build_request(
-        "GenerateSubqueries",
+        "ReasonAct",
         {
           "question": question,
           "clarification_details": clarification_details,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        False,
-      )
-    
-    async def PlanSteps(
-        self,
-        question: str,subqueries: List[str],
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "PlanSteps",
-        {
-          "question": question,
-          "subqueries": subqueries,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        False,
-      )
-    
-    async def RankResults(
-        self,
-        question: str,subqueries: List[str],results: List[types.ResultItem],top_k: int,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "RankResults",
-        {
-          "question": question,
-          "subqueries": subqueries,
-          "results": results,
-          "top_k": top_k,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        False,
-      )
-    
-    async def RewriteQuery(
-        self,
-        question: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "RewriteQuery",
-        {
-          "question": question,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        False,
-      )
-    
-    async def SynthesizeAnswers(
-        self,
-        question: str,sub_answers: List[str],
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "SynthesizeAnswers",
-        {
-          "question": question,
-          "sub_answers": sub_answers,
+          "history": history,
+          "critique_feedback": critique_feedback,
         },
         self.__ctx_manager.get(),
         tb,
@@ -311,30 +193,6 @@ class AsyncHttpStreamRequest:
         True,
       )
     
-    async def AnswerQuestionWithContext(
-        self,
-        question: str,context: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "AnswerQuestionWithContext",
-        {
-          "question": question,
-          "context": context,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        True,
-      )
-    
     async def ClarifyQuestion(
         self,
         question: str,
@@ -382,9 +240,9 @@ class AsyncHttpStreamRequest:
         True,
       )
     
-    async def DecomposeQuestion(
+    async def FilterResults(
         self,
-        question: str,
+        question: str,results: List[types.ObservationItem],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.HTTPRequest:
       __tb__ = baml_options.get("tb", None)
@@ -395,9 +253,10 @@ class AsyncHttpStreamRequest:
       __cr__ = baml_options.get("client_registry", None)
 
       return await self.__runtime.build_request(
-        "DecomposeQuestion",
+        "FilterResults",
         {
           "question": question,
+          "results": results,
         },
         self.__ctx_manager.get(),
         tb,
@@ -405,9 +264,9 @@ class AsyncHttpStreamRequest:
         True,
       )
     
-    async def GenerateSubqueries(
+    async def ReasonAct(
         self,
-        question: str,clarification_details: str,
+        question: str,clarification_details: Optional[str],history: List[types.HistoryItem],critique_feedback: Optional[str],
         baml_options: BamlCallOptions = {},
     ) -> baml_py.HTTPRequest:
       __tb__ = baml_options.get("tb", None)
@@ -418,107 +277,12 @@ class AsyncHttpStreamRequest:
       __cr__ = baml_options.get("client_registry", None)
 
       return await self.__runtime.build_request(
-        "GenerateSubqueries",
+        "ReasonAct",
         {
           "question": question,
           "clarification_details": clarification_details,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        True,
-      )
-    
-    async def PlanSteps(
-        self,
-        question: str,subqueries: List[str],
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "PlanSteps",
-        {
-          "question": question,
-          "subqueries": subqueries,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        True,
-      )
-    
-    async def RankResults(
-        self,
-        question: str,subqueries: List[str],results: List[types.ResultItem],top_k: int,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "RankResults",
-        {
-          "question": question,
-          "subqueries": subqueries,
-          "results": results,
-          "top_k": top_k,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        True,
-      )
-    
-    async def RewriteQuery(
-        self,
-        question: str,
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "RewriteQuery",
-        {
-          "question": question,
-        },
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-        True,
-      )
-    
-    async def SynthesizeAnswers(
-        self,
-        question: str,sub_answers: List[str],
-        baml_options: BamlCallOptions = {},
-    ) -> baml_py.HTTPRequest:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      return await self.__runtime.build_request(
-        "SynthesizeAnswers",
-        {
-          "question": question,
-          "sub_answers": sub_answers,
+          "history": history,
+          "critique_feedback": critique_feedback,
         },
         self.__ctx_manager.get(),
         tb,

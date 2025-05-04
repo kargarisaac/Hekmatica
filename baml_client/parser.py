@@ -63,32 +63,6 @@ class LlmResponseParser:
 
       return cast(types.Answer, parsed)
     
-    def AnswerQuestionWithContext(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> str:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "AnswerQuestionWithContext",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        False,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(str, parsed)
-    
     def ClarifyQuestion(
         self,
         llm_response: str,
@@ -141,11 +115,11 @@ class LlmResponseParser:
 
       return cast(types.Critique, parsed)
     
-    def DecomposeQuestion(
+    def FilterResults(
         self,
         llm_response: str,
         baml_options: BamlCallOptions = {},
-    ) -> types.SubQuestions:
+    ) -> List[types.FilteredItem]:
       __tb__ = baml_options.get("tb", None)
       if __tb__ is not None:
         tb = __tb__._tb # type: ignore (we know how to use this private attribute)
@@ -154,7 +128,7 @@ class LlmResponseParser:
       __cr__ = baml_options.get("client_registry", None)
 
       parsed = self.__runtime.parse_llm_response(
-        "DecomposeQuestion",
+        "FilterResults",
         llm_response,
         types,
         types,
@@ -165,13 +139,13 @@ class LlmResponseParser:
         __cr__,
       )
 
-      return cast(types.SubQuestions, parsed)
+      return cast(List[types.FilteredItem], parsed)
     
-    def GenerateSubqueries(
+    def ReasonAct(
         self,
         llm_response: str,
         baml_options: BamlCallOptions = {},
-    ) -> List[str]:
+    ) -> types.AgentAction:
       __tb__ = baml_options.get("tb", None)
       if __tb__ is not None:
         tb = __tb__._tb # type: ignore (we know how to use this private attribute)
@@ -180,7 +154,7 @@ class LlmResponseParser:
       __cr__ = baml_options.get("client_registry", None)
 
       parsed = self.__runtime.parse_llm_response(
-        "GenerateSubqueries",
+        "ReasonAct",
         llm_response,
         types,
         types,
@@ -191,111 +165,7 @@ class LlmResponseParser:
         __cr__,
       )
 
-      return cast(List[str], parsed)
-    
-    def PlanSteps(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> types.Plan:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "PlanSteps",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        False,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(types.Plan, parsed)
-    
-    def RankResults(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> List[types.RankedResultItem]:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "RankResults",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        False,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(List[types.RankedResultItem], parsed)
-    
-    def RewriteQuery(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> str:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "RewriteQuery",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        False,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(str, parsed)
-    
-    def SynthesizeAnswers(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> str:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "SynthesizeAnswers",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        False,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(str, parsed)
+      return cast(types.AgentAction, parsed)
     
 
 
@@ -333,32 +203,6 @@ class LlmStreamParser:
       )
 
       return cast(partial_types.Answer, parsed)
-    
-    def AnswerQuestionWithContext(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> Optional[str]:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "AnswerQuestionWithContext",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        True,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(Optional[str], parsed)
     
     def ClarifyQuestion(
         self,
@@ -412,11 +256,11 @@ class LlmStreamParser:
 
       return cast(partial_types.Critique, parsed)
     
-    def DecomposeQuestion(
+    def FilterResults(
         self,
         llm_response: str,
         baml_options: BamlCallOptions = {},
-    ) -> partial_types.SubQuestions:
+    ) -> List[partial_types.FilteredItem]:
       __tb__ = baml_options.get("tb", None)
       if __tb__ is not None:
         tb = __tb__._tb # type: ignore (we know how to use this private attribute)
@@ -425,7 +269,7 @@ class LlmStreamParser:
       __cr__ = baml_options.get("client_registry", None)
 
       parsed = self.__runtime.parse_llm_response(
-        "DecomposeQuestion",
+        "FilterResults",
         llm_response,
         types,
         types,
@@ -436,13 +280,13 @@ class LlmStreamParser:
         __cr__,
       )
 
-      return cast(partial_types.SubQuestions, parsed)
+      return cast(List[partial_types.FilteredItem], parsed)
     
-    def GenerateSubqueries(
+    def ReasonAct(
         self,
         llm_response: str,
         baml_options: BamlCallOptions = {},
-    ) -> List[Optional[str]]:
+    ) -> partial_types.AgentAction:
       __tb__ = baml_options.get("tb", None)
       if __tb__ is not None:
         tb = __tb__._tb # type: ignore (we know how to use this private attribute)
@@ -451,7 +295,7 @@ class LlmStreamParser:
       __cr__ = baml_options.get("client_registry", None)
 
       parsed = self.__runtime.parse_llm_response(
-        "GenerateSubqueries",
+        "ReasonAct",
         llm_response,
         types,
         types,
@@ -462,111 +306,7 @@ class LlmStreamParser:
         __cr__,
       )
 
-      return cast(List[Optional[str]], parsed)
-    
-    def PlanSteps(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> partial_types.Plan:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "PlanSteps",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        True,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(partial_types.Plan, parsed)
-    
-    def RankResults(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> List[partial_types.RankedResultItem]:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "RankResults",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        True,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(List[partial_types.RankedResultItem], parsed)
-    
-    def RewriteQuery(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> Optional[str]:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "RewriteQuery",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        True,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(Optional[str], parsed)
-    
-    def SynthesizeAnswers(
-        self,
-        llm_response: str,
-        baml_options: BamlCallOptions = {},
-    ) -> Optional[str]:
-      __tb__ = baml_options.get("tb", None)
-      if __tb__ is not None:
-        tb = __tb__._tb # type: ignore (we know how to use this private attribute)
-      else:
-        tb = None
-      __cr__ = baml_options.get("client_registry", None)
-
-      parsed = self.__runtime.parse_llm_response(
-        "SynthesizeAnswers",
-        llm_response,
-        types,
-        types,
-        partial_types,
-        True,
-        self.__ctx_manager.get(),
-        tb,
-        __cr__,
-      )
-
-      return cast(Optional[str], parsed)
+      return cast(partial_types.AgentAction, parsed)
     
 
 

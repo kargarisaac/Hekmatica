@@ -35,6 +35,12 @@ class StreamState(BaseModel, Generic[T]):
     state: Literal["Pending", "Incomplete", "Complete"]
 
 
+class AgentAction(BaseModel):
+    tool_name: Optional[types.ToolName] = None
+    query: Optional[str] = None
+    finish: Optional[bool] = None
+    thought: Optional[str] = None
+
 class Answer(BaseModel):
     cited_answer: Optional[str] = None
     references: List["Source"]
@@ -51,26 +57,21 @@ class Critique(BaseModel):
     is_good: Optional[bool] = None
     missing_info: Optional[str] = None
 
-class Plan(BaseModel):
-    steps: List["Step"]
+class FilteredItem(BaseModel):
+    content: Optional[str] = None
+    source: Optional[str] = None
 
-class RankedResultItem(BaseModel):
+class HistoryItem(BaseModel):
+    thought: Optional[str] = None
+    action: Optional[str] = None
+    observation: Optional[str] = None
+
+class ObservationItem(BaseModel):
     content: Optional[str] = None
     link: Optional[str] = None
-    relevance_score: Optional[int] = None
-
-class ResultItem(BaseModel):
-    content: Optional[str] = None
-    link: Optional[str] = None
+    error: Optional[str] = None
 
 class Source(BaseModel):
     index: Optional[int] = None
     source: Optional[str] = None
     source_type: Optional[str] = None
-
-class Step(BaseModel):
-    tool: Optional[types.Tool] = None
-    query: Optional[str] = None
-
-class SubQuestions(BaseModel):
-    questions: List[str]
