@@ -1,23 +1,15 @@
 from typing import List, Optional, Dict
-from pydantic import BaseModel
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, END
 
-import argparse
-
-# Import BAML-generated client and types
 from baml_client.sync_client import b  # BAML synchronous client
 from baml_client.types import (
-    Clarification,
-    Plan,
-    Critique,
     ResultItem,
     RankedResultItem,
-    Answer,
     ContextItem,
 )
 
 # Import tools
-from tools.tools import web_search, get_current_price
+from tools.get_price import web_search, get_current_price
 
 from agents.deep_research.state import AgentState
 
